@@ -34,12 +34,14 @@ defined('MOODLE_INTERNAL') || die();
  * @throws dml_exception
  */
 function local_selfregkey_user_created(user_created $event) {
-    global $DB;
+    global $DB, $CFG;
 
     $enabled = get_config(helper::COMPONENT, 'enabled');
     if (!$enabled) {
         return;
     }
+
+    require_once($CFG->dirroot.'/user/profile/lib.php');
 
     $userobject = $DB->get_record('user', ['id' => $event->userid, 'deleted' => 0]);
     $fields = profile_user_record($event->userid);
@@ -49,7 +51,7 @@ function local_selfregkey_user_created(user_created $event) {
 
         /** @var enrol_self_plugin $enrol */
         $enrol = enrol_get_plugin('self');
-        $enrolplugins = $DB->get_records('enrol', ['enrol' => 'self', 'password' => $fields->local_selfregkey]);
+        $enrolplugins = $DB->get_records('enrol', ['enrol' => 'self', 'password' => $fields->{helper::SHORTNAME}]);
         foreach ($enrolplugins as $enrolplugin) {
             if ($enrol->can_self_enrol($enrolplugin) === true) {
                 $data = new stdClass();
@@ -63,7 +65,7 @@ function local_selfregkey_user_created(user_created $event) {
                   FROM {groups} g
                   JOIN {enrol}  e ON e.courseid = g.courseid AND e.enrol = :enrol AND e.customint1 = :enabled
                  WHERE g.enrolmentkey = :enrolkey",
-            ['enrol' => 'self', 'enabled' => 1, 'enrolkey' => $fields->local_selfregkey]
+            ['enrol' => 'self', 'enabled' => 1, 'enrolkey' => $fields->{helper::SHORTNAME}]
         );
         foreach ($enrolplugins as $enrolplugin) {
             if ($enrol->can_self_enrol($enrolplugin) === true) {
