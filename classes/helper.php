@@ -29,6 +29,7 @@ use admin_setting_configcheckbox;
 use dml_exception;
 use coding_exception;
 use Exception;
+use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -50,6 +51,28 @@ abstract class helper {
     const SHORTNAME = 'localselfregkey';
 
     /**
+     * In case there are no categories we add the default one.
+     *
+     * @throws coding_exception
+     * @throws dml_exception
+     */
+    public static function initcategory() {
+        global $DB;
+        $resultid = null;
+        $categories = $DB->get_records('user_info_category');
+        if (empty($categories)) {
+            $defaultcategory = new stdClass();
+            $defaultcategory->name = get_string('profiledefaultcategory', 'admin');
+            $defaultcategory->sortorder = 1;
+            $resultid = $DB->insert_record('user_info_category', $defaultcategory);
+        } else {
+            reset($categories);
+            $resultid = key($categories);
+        }
+        return $resultid;
+    }
+
+    /**
      * @throws coding_exception
      * @throws dml_exception
      */
@@ -57,13 +80,14 @@ abstract class helper {
         global $DB;
         try {
             $enabled = get_config(self::COMPONENT, 'enabled');
+
             // Create custom profile field.
             $DB->insert_record(
                 self::TABLE,
                 [
                     'shortname'         => self::SHORTNAME,
                     'name'              => get_string('signup_field_title', self::COMPONENT),
-                    'categoryid'        => 1,
+                    'categoryid'        => self::initcategory(),
                     'signup'            => $enabled,
                     'visible'           => PROFILE_VISIBLE_PRIVATE,
                     'required'          => $enabled,

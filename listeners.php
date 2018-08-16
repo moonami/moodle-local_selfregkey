@@ -43,8 +43,8 @@ function local_selfregkey_user_created(user_created $event) {
 
     require_once($CFG->dirroot.'/user/profile/lib.php');
 
-    $userobject = $DB->get_record('user', ['id' => $event->userid, 'deleted' => 0]);
-    $fields = profile_user_record($event->userid);
+    $userobject = $DB->get_record('user', ['id' => $event->objectid, 'deleted' => 0]);
+    $fields = profile_user_record($event->objectid);
     if ($userobject and ($userobject->auth === 'email')) {
 
         complete_user_login($userobject);
